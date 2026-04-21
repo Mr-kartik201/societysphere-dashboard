@@ -1,9 +1,13 @@
-import { Bell, Search, Plus, Settings, LogOut, User, HelpCircle, CreditCard, Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bell, Search, Plus, Settings, LogOut, User, HelpCircle, CreditCard, Check, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/client";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +34,27 @@ const typeColor: Record<string, string> = {
 };
 
 export const Topbar = ({ title, subtitle }: { title: string; subtitle?: string }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
   const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Signed out");
+      navigate("/");
+    } catch (error: any) {
+      toast.error("Logout failed: " + error.message);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  const userInitial = user?.email?.[0].toUpperCase() || "A";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
@@ -49,13 +73,12 @@ export const Topbar = ({ title, subtitle }: { title: string; subtitle?: string }
             placeholder="Search residents, flats, invoices..."
             className="h-9 w-72 border-border bg-secondary/60 pl-9 text-sm focus-visible:bg-background"
           />
-          <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-            ⌘K
-          </kbd>
         </div>
 
-        <Button size="sm" className="hidden gradient-primary text-primary-foreground shadow-sm hover:opacity-90 lg:inline-flex">
-          <Plus className="mr-1 h-4 w-4" /> Quick add
+        <Button size="sm" className="hidden gradient-primary text-primary-foreground shadow-sm hover:opacity-90 lg:inline-flex" asChild>
+          <Link to="/residents">
+            <Plus className="mr-1 h-4 w-4" /> Quick add
+          </Link>
         </Button>
 
         {/* Notifications */}
@@ -97,10 +120,6 @@ export const Topbar = ({ title, subtitle }: { title: string; subtitle?: string }
                 </DropdownMenuItem>
               ))}
             </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-sm font-medium text-primary">
-              View all notifications
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -109,18 +128,18 @@ export const Topbar = ({ title, subtitle }: { title: string; subtitle?: string }
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-2 ring-primary/20 transition-all hover:ring-primary/40">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="gradient-primary text-xs font-semibold text-primary-foreground">AV</AvatarFallback>
+                <AvatarFallback className="gradient-primary text-xs font-semibold text-primary-foreground">{userInitial}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
             <DropdownMenuLabel className="flex items-center gap-3 px-3 py-2">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="gradient-primary text-sm font-semibold text-primary-foreground">AV</AvatarFallback>
+                <AvatarFallback className="gradient-primary text-sm font-semibold text-primary-foreground">{userInitial}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">Anil Verma</div>
-                <div className="truncate text-xs font-normal text-muted-foreground">anil@greenmeadows.in</div>
+                <div className="truncate text-sm font-semibold">{user?.email?.split('@')[0] || "Admin"}</div>
+                <div className="truncate text-xs font-normal text-muted-foreground">{user?.email}</div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -130,13 +149,14 @@ export const Topbar = ({ title, subtitle }: { title: string; subtitle?: string }
             <DropdownMenuItem asChild>
               <Link to="/settings" className="cursor-pointer"><Settings className="mr-2 h-4 w-4" />Settings</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/billing" className="cursor-pointer"><CreditCard className="mr-2 h-4 w-4" />Billing</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer"><HelpCircle className="mr-2 h-4 w-4" />Help & support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer text-destructive focus:text-destructive">
-              <Link to="/login"><LogOut className="mr-2 h-4 w-4" />Sign out</Link>
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive focus:text-destructive font-semibold"
+              onClick={handleLogout}
+              disabled={loggingOut}
+            >
+              {loggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

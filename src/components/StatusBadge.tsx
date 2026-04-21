@@ -8,8 +8,8 @@ const map: Record<string, string> = {
   "In Progress": "bg-warning/10 text-warning ring-warning/20",
   Resolved: "bg-success/10 text-success ring-success/20",
   Available: "bg-success/10 text-success ring-success/20",
-  Booked: "bg-info/10 text-info ring-info/20",
-  Maintenance: "bg-warning/10 text-warning ring-warning/20",
+  Booked: "bg-warning/10 text-warning ring-warning/20",
+  Maintenance: "bg-destructive/10 text-destructive ring-destructive/20",
   "On Duty": "bg-success/10 text-success ring-success/20",
   Off: "bg-muted text-muted-foreground ring-border",
   In: "bg-info/10 text-info ring-info/20",
@@ -18,7 +18,12 @@ const map: Record<string, string> = {
   Tenant: "bg-accent/10 text-accent ring-accent/20",
   High: "bg-destructive/10 text-destructive ring-destructive/20",
   Medium: "bg-warning/10 text-warning ring-warning/20",
-  Low: "bg-muted text-muted-foreground ring-border",
+  Active: "bg-success/10 text-success ring-success/20",
+  Past: "bg-muted text-muted-foreground ring-border",
+  Approved: "bg-success/10 text-success ring-success/20",
+  Denied: "bg-destructive/10 text-destructive ring-destructive/20",
+  "At Gate": "bg-warning/10 text-warning ring-warning/20",
+  Delivered: "bg-success/10 text-success ring-success/20",
 };
 
 export const StatusBadge = ({ status }: { status: string }) => (

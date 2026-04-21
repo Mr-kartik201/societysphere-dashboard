@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/client";
 
 const main = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -76,6 +77,17 @@ export function AppSidebar() {
     );
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.href = "/";
+    } catch (error: any) {
+      console.error("Logout failed:", error.message);
+    }
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
@@ -112,13 +124,13 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
-        <NavLink
-          to="/login"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-destructive"
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Sign out</span>}
-        </NavLink>
+        </button>
       </SidebarFooter>
     </Sidebar>
   );

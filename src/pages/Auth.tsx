@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/client";
+import { toast } from "sonner";
 
 const AuthShell = ({
   title,
@@ -56,29 +58,67 @@ const AuthShell = ({
 
 export const Login = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthShell
       title="Welcome back"
       subtitle="Sign in to continue managing your community."
       footer={<>Don't have an account? <Link to="/register" className="font-medium text-primary hover:underline">Create one</Link></>}
     >
-      <form
-        onSubmit={(e) => { e.preventDefault(); navigate("/dashboard"); }}
-        className="space-y-4"
-      >
+      <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="admin@yoursociety.com" defaultValue="admin@greenmeadows.in" />
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="admin@yoursociety.com" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <a href="#" className="text-xs text-primary hover:underline">Forgot?</a>
           </div>
-          <Input id="password" type="password" defaultValue="••••••••" />
+          <Input 
+            id="password" 
+            type="password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </div>
-        <Button type="submit" className="h-11 w-full gradient-primary text-primary-foreground hover:opacity-90">Sign in</Button>
-        <Button type="button" variant="outline" className="h-11 w-full">Continue with Google</Button>
+        <Button disabled={loading} type="submit" className="h-11 w-full gradient-primary text-primary-foreground hover:opacity-90">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+        </Button>
+        <Button variant="outline" className="h-11 w-full" type="button">Continue with Google</Button>
       </form>
     </AuthShell>
   );
@@ -86,21 +126,96 @@ export const Login = () => {
 
 export const Register = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [society, setSociety] = useState("");
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            society_name: society,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        toast.success("Account created successfully!");
+        navigate("/dashboard");
+      } else {
+        toast.success("Registration successful! Please check your email for verification.");
+        navigate("/login");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start your 14-day free trial. No credit card required."
+      subtitle="Start managing your society more efficiently."
       footer={<>Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></>}
     >
-      <form onSubmit={(e) => { e.preventDefault(); navigate("/dashboard"); }} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2"><Label htmlFor="fn">First name</Label><Input id="fn" defaultValue="Anil" /></div>
-          <div className="space-y-2"><Label htmlFor="ln">Last name</Label><Input id="ln" defaultValue="Verma" /></div>
+      <form onSubmit={handleRegister} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="fullName">Full name</Label>
+          <Input 
+            id="fullName" 
+            placeholder="Anil Verma" 
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required 
+          />
         </div>
-        <div className="space-y-2"><Label htmlFor="society">Society name</Label><Input id="society" defaultValue="Green Meadows Society" /></div>
-        <div className="space-y-2"><Label htmlFor="email2">Work email</Label><Input id="email2" type="email" defaultValue="anil@greenmeadows.in" /></div>
-        <div className="space-y-2"><Label htmlFor="pw2">Password</Label><Input id="pw2" type="password" defaultValue="••••••••" /></div>
-        <Button type="submit" className="h-11 w-full gradient-primary text-primary-foreground hover:opacity-90">Create account</Button>
+        <div className="space-y-2">
+          <Label htmlFor="society">Society name</Label>
+          <Input 
+            id="society" 
+            placeholder="Green Meadows Society" 
+            value={society}
+            onChange={(e) => setSociety(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Work email</Label>
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="anil@greenmeadows.in" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input 
+            id="password" 
+            type="password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+          />
+        </div>
+        <Button disabled={loading} type="submit" className="h-11 w-full gradient-primary text-primary-foreground hover:opacity-90">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+        </Button>
         <ul className="space-y-2 pt-2 text-xs text-muted-foreground">
           {["14-day free trial","Cancel anytime","Free onboarding & training"].map(t=>(
             <li key={t} className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-accent" />{t}</li>
@@ -110,3 +225,4 @@ export const Register = () => {
     </AuthShell>
   );
 };
+
