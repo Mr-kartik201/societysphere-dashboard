@@ -27,7 +27,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
-import { testimonials } from "@/lib/dummy-data";
+const testimonials = [
+  { name: "Anil Verma", role: "Society Secretary, Green Meadows", quote: "SocietySphere replaced 4 different tools and a WhatsApp group. Our collections improved 38% in the first quarter." },
+  { name: "Kavita Joshi", role: "Treasurer, Silver Oaks", quote: "The billing automation alone saves us two full days every month. Residents love the clean payment experience." },
+  { name: "Rajiv Menon", role: "Chairman, Palm Heights", quote: "Visitor management is finally sane. Our guards adopted it on day one — that's how intuitive it is." },
+];
 
 const features = [
   { icon: Receipt, title: "Maintenance & Billing", desc: "Auto-generate invoices, accept online payments, and track every rupee in real time.", color: "from-primary to-info" },

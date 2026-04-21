@@ -60,6 +60,7 @@ const Dashboard = () => {
   const [recentVisitors, setRecentVisitors] = useState<any[]>([]);
   const [recentNotices, setRecentNotices] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
   
   const supabase = createClient();
 
@@ -73,9 +74,20 @@ const Dashboard = () => {
       const { count: staffCount } = await supabase.from("staff").select("*", { count: "exact", head: true }).eq("status", "On Duty");
 
       // 2. Billing Stats
-      const { data: billsData } = await supabase.from("bills").select("amount, status");
+      const { data: billsData } = await supabase.from("bills").select("amount, status, billing_month");
       const maintCollected = billsData?.filter(b => b.status === "Paid").reduce((acc, b) => acc + b.amount, 0) || 0;
-      const pendingDues = billsData?.filter(b => b.status === "Unpaid").reduce((acc, b) => acc + b.amount, 0) || 0;
+      const pendingDues = billsData?.filter(b => b.status === "Unpaid" || b.status === "Overdue" || b.status === "Pending").reduce((acc, b) => acc + b.amount, 0) || 0;
+
+      // Group revenue by month
+      const monthlyData = billsData?.reduce((acc: any, b) => {
+        if (!b.billing_month) return acc;
+        const month = b.billing_month.substring(0, 3);
+        if (!acc[month]) acc[month] = { month, collected: 0, pending: 0 };
+        if (b.status === "Paid") acc[month].collected += b.amount;
+        else acc[month].pending += b.amount;
+        return acc;
+      }, {});
+      setRevenueData(monthlyData ? Object.values(monthlyData) : []);
 
       setStats({
         residents: resCount || 0,
@@ -115,13 +127,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
-
-  const revenueData = [
-    { month: "Jan", collected: 42000, pending: 12000 },
-    { month: "Feb", collected: 45000, pending: 15000 },
-    { month: "Mar", collected: 51000, pending: 10000 },
-    { month: "Apr", collected: stats.maintCollected, pending: stats.pendingDues },
-  ];
 
   return (
     <DashboardLayout title="Dashboard Overview" subtitle="Real-time pulse of your society operations.">

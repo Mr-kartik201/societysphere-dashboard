@@ -45,24 +45,42 @@ const Reports = () => {
         visitorFootfall: totalVisitors || 0
       });
 
-      // 2. Revenue Trend (Last 4 months placeholder for demo purposes, joined with real Apr data)
-      setRevenueTrend([
-        { month: "Jan", collected: 42000, pending: 12000 },
-        { month: "Feb", collected: 45000, pending: 15000 },
-        { month: "Mar", collected: 51000, pending: 10000 },
-        { month: "Apr", collected: paidTotal, pending: bills?.filter(b => b.status === "Unpaid").reduce((acc, b) => acc + b.amount, 0) || 0 },
-      ]);
+      // 2. Revenue Trend (Grouped from bills)
+      const monthlyData = bills?.reduce((acc: any, b) => {
+        if (!b.billing_month) return acc;
+        const month = b.billing_month.substring(0, 3);
+        if (!acc[month]) acc[month] = { month, collected: 0, pending: 0 };
+        if (b.status === "Paid") acc[month].collected += b.amount;
+        else acc[month].pending += b.amount;
+        return acc;
+      }, {});
+      setRevenueTrend(monthlyData ? Object.values(monthlyData) : []);
 
-      // 3. Complaint Trend (Simple placeholder logic for bar chart)
-      setComplaintTrend([
-        { day: "Mon", opened: 4, resolved: 3 },
-        { day: "Tue", opened: 6, resolved: 2 },
-        { day: "Wed", opened: 2, resolved: 4 },
-        { day: "Thu", opened: 8, resolved: 5 },
-        { day: "Fri", opened: 5, resolved: 4 },
-        { day: "Sat", opened: 1, resolved: 1 },
-        { day: "Sun", opened: 0, resolved: 0 },
-      ]);
+      // 3. Complaint Trend (Grouped from complaints over last 7 days)
+      const { data: allComplaints } = await supabase.from("complaints").select("created_at, status");
+      
+      const now = new Date();
+      const last7DaysData = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(now.getDate() - (6 - i));
+        return {
+          day: d.toLocaleDateString('default', { weekday: 'short' }),
+          dateStr: d.toISOString().split('T')[0],
+          opened: 0,
+          resolved: 0
+        };
+      });
+
+      allComplaints?.forEach(c => {
+         if (!c.created_at) return;
+         const dStr = c.created_at.split('T')[0];
+         const match = last7DaysData.find(x => x.dateStr === dStr);
+         if (match) {
+           if (c.status === "Resolved") match.resolved += 1;
+           else match.opened += 1;
+         }
+      });
+      setComplaintTrend(last7DaysData);
 
       // 4. Issue Categories (Pie chart)
       const { data: qComp } = await supabase.from("complaints").select("category");
